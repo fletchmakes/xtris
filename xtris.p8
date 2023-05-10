@@ -31,6 +31,16 @@ function _init()
 end
 
 function _update()
+    -- iterate over each pixel in the fade_idx tile - if we see a green pixel, roll a dice to see if we should set it to black
+    for i=0,64 do
+        local top_x, top_y = tiles[fade_idx].x, tiles[fade_idx].y
+        local pixel_color = fade_table[i+1]
+        -- we roll a d100 - if the dice is greater than 70, then we set that pixel to black
+        if (pixel_color == 3 and rnd() > 0.7) then
+            fade_table[i+1] = 0
+        end
+    end
+
     -- determine the game end condition
     elapsed_time = t()
     if (elapsed_time > 63) then
@@ -58,16 +68,6 @@ function _update()
 
         fade_tile(player_idx)
     end
-
-    -- iterate over each pixel in the fade_idx tile - if we see a green pixel, roll a dice to see if we should set it to black
-    for i=0,64 do
-        local top_x, top_y = tiles[fade_idx].x, tiles[fade_idx].y
-        local pixel_color = fade_table[i+1]
-        -- we roll a d100 - if the dice is greater than 70, then we set that pixel to black
-        if (pixel_color == 3 and rnd() > 0.7) then
-            fade_table[i+1] = 0
-        end
-    end
 end
 
 function _draw()
@@ -82,6 +82,11 @@ function _draw()
 
     -- print out the player's points
     print(pad_score(points), 27, 15, 7)
+
+    -- game over text
+    if (game_over) then
+        print("ctrl+r to retry", 2, 50, 7)
+    end
 
     -- show the timer
     line(0, 63, elapsed_time, 63)
