@@ -20,6 +20,18 @@ easeManager = nil
 
 GAME_STATE = "MENU"
 
+-- key mapping
+k_left = 0
+k_right = 1
+k_up = 2
+k_down = 3
+k_confirm = 4
+
+-- sound mapping
+s_button = 0
+s_goal = 1
+s_confirm =2
+
 -->8
 -- lifecycle functions
 function _init()
@@ -62,13 +74,13 @@ function _update_MENU()
     if (menu == nil) then
         -- initialize the menu
         menu = {}
-        menu.hovered_level = 1
-        menu.offset = 0 -- set this to 64 so we can display the title screen first
+        menu.hovered_level = 0
+        menu.offset = 0
         menu.transitioning = false
         menu.layout = {}
 
         for idx=1,#levels do
-            local top_left_x = 32 - ((levels[idx].cols * 6) / 2) + ((idx-1) * 64)
+            local top_left_x = 32 - ((levels[idx].cols * 6) / 2) + (idx * 64)
             local top_left_y = 32 - ((levels[idx].rows * 6) / 2)
         
             for tile_idx,tile in ipairs(levels[idx].tiles) do
@@ -85,13 +97,15 @@ function _update_MENU()
     end
 
     if (not menu.transitioning) then
-        if (btnp(0) and menu.hovered_level > 0) then
+        if (btnp(k_left) and menu.hovered_level > 0) then
+            sfx(s_button)
             menu.transitioning = true
             easeManager.ease(menu, "offset", menu.offset, menu.offset - 64, 15, function() 
                 menu.hovered_level -=1
                 menu.transitioning = false
             end)
-        elseif (btnp(1) and menu.hovered_level < #levels) then
+        elseif (btnp(k_right) and menu.hovered_level < #levels) then
+            sfx(s_button)
             menu.transitioning = true
             easeManager.ease(menu, "offset", menu.offset, menu.offset + 64, 15, function() 
                 menu.hovered_level +=1
@@ -99,7 +113,8 @@ function _update_MENU()
             end)
         end
 
-        if (btnp(4)) then
+        if (btnp(k_confirm) and menu.hovered_level > 0) then
+            sfx(s_confirm)
             load_level(levels[menu.hovered_level])
             GAME_STATE = "LOADING"
         end
@@ -110,7 +125,7 @@ function _draw_MENU()
     cls(0)
 
     -- draw the title screen
-    spr(0 - menu.offset, 0, 0, 8, 8)
+    spr(0, 0 - menu.offset, 0, 8, 8)
 
     -- draw the tiles
     for idx,tile in ipairs(menu.layout) do
@@ -121,28 +136,34 @@ function _draw_MENU()
         end
     end
 
-    -- lil dots to indicate which page we are on
-    local left_x = 32 - ((#levels * 3) / 2)
-    for i=1,#levels do
-        local color = 5
-        if (i == menu.hovered_level and not menu.transitioning) then
-           color = 3
-        end
-        pset(left_x + ((i-1)*3), 50, color)
-    end
+    if (menu.hovered_level == 0) then
 
-    -- show an indicator there are more levels this way
-    if (not menu.transitioning) then
-        if (menu.hovered_level > 1) then
-            print(chr(139), 2, 29, 5)
-        end
-
-        if (menu.hovered_level < #levels) then
-            print(chr(145), 55, 29, 5)
+    else
+        -- lil dots to indicate which page we are on
+        if (menu.offset > 63) then -- extreme hack but it works - don't show the pages on the menu screen
+            local left_x = 32 - ((#levels * 3) / 2)
+            for i=1,#levels do
+                local color = 5
+                if (i == menu.hovered_level and not menu.transitioning) then
+                    color = 3
+                end
+                pset(left_x + ((i-1)*3), 50, color)
+            end
         end
 
-        -- print level number
-        print(pad_num(menu.hovered_level, "level"), 28, 29, 7)
+        -- show an indicator there are more levels this way
+        if (not menu.transitioning) then
+            if (menu.hovered_level > 0) then
+                print(chr(139), 2, 29, 5)
+            end
+
+            if (menu.hovered_level < #levels) then
+                print(chr(145), 55, 29, 5)
+            end
+
+            -- print level number
+            print(pad_num(menu.hovered_level, "level"), 28, 29, 7)
+        end
     end
 end
 
@@ -154,6 +175,7 @@ function _update_LOADING()
     if (loading_timer < 0) then
         GAME_STATE = "PLAYING"
         start_time = t()
+        elapsed_time = 0
     end
 end
 
@@ -190,7 +212,7 @@ function _update_PLAYING()
         end
     end
 
-    if (btnp(4) and game_over) then
+    if (btnp(k_confirm) and game_over) then
         GAME_STATE = "MENU"
     end
 
@@ -202,18 +224,23 @@ function _update_PLAYING()
     end
 
     -- if we haven't hit game end condition yet, we fall here
-    if (btnp(0) and check_left()) then -- left was pressed
+    if (btnp(k_left) and check_left()) then -- left was pressed
+        sfx(s_button)
         player_idx -= 1
-    elseif (btnp(1) and check_right()) then -- right was pressed
+    elseif (btnp(k_right) and check_right()) then -- right was pressed
+        sfx(s_button)
         player_idx += 1
-    elseif (btnp(2) and check_up()) then -- up was pressed
+    elseif (btnp(k_up) and check_up()) then -- up was pressed
+        sfx(s_button)
         player_idx -= current_level.cols
-    elseif (btnp(3) and check_down()) then -- down was pressed
+    elseif (btnp(k_down) and check_down()) then -- down was pressed
+        sfx(s_button)
         player_idx += current_level.cols
     end
 
     -- check to see if we've hit the goal
     if (player_idx == goal_idx) then
+        sfx(s_goal)
         points += 1
         while (goal_idx == player_idx or tiles[goal_idx] == "EMPTY") do 
             goal_idx = rnd(#tiles)\1 + 1
@@ -405,6 +432,15 @@ levels = {
         cols = 3,
         start = 2,
         tiles = {
+            true, true , false,
+            false, true, true,
+        }
+    },
+    {
+        rows = 2,
+        cols = 3,
+        start = 2,
+        tiles = {
             true, true , true,
             true, false, true,
         }
@@ -453,18 +489,6 @@ levels = {
     },
     {
         rows = 5,
-        cols = 6,
-        start = 14,
-        tiles = {
-            false, true, true, false, false, false,
-            true, true, false, true, false, false,
-            true, true, true, true, true, true,
-            true, true, true, false, false, false,
-            true, true, true, false, false, false,
-        }
-    },
-    {
-        rows = 5,
         cols = 3,
         start = 8,
         tiles = {
@@ -476,29 +500,28 @@ levels = {
         }
     },
     {
-        rows = 5,
+        rows = 4,
         cols = 3,
-        start = 2,
+        start = 5,
         tiles = {
-            true, true , false,
-            true, false, true,
+            true, false , true,
             true, true, true,
-            true, false, true,
-            true, true, false,
+            true, true, true,
+            false, true, false,
         }
     },
     {
         rows = 5,
-        cols = 5,
-        start = 8,
+        cols = 6,
+        start = 14,
         tiles = {
-            true, true, false, true, true, 
-            true, true, true, true, true,
-            true, true, true, true, true,
-            false, true, true, true, false,
-            false, false, true, false, false,
+            false, true, true, false, false, false,
+            true, true, false, true, false, false,
+            true, true, true, true, true, true,
+            true, true, true, false, false, false,
+            true, true, true, false, false, false,
         }
-    }
+    },
 }
 
 __gfx__
@@ -524,7 +547,6 @@ __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000030307770777077700770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000030300700707007007000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000003000700770007007770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -532,11 +554,11 @@ __gfx__
 00000030300700707077707700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000055500000055055505550555000005550505000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000050500000500050505550500000005050505000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000055500000500055505050550000005500555000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000050500000505050505050500000005050005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000050500000555050505050555000005550555000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000055500000055055505550555000005550505000000000000000555550000000000000000000000000000000000000000000000000000000000000000000
+00000050500000500050505550500000005050505000000000000005500555000000000000000000000000000000000000000000000000000000000000000000
+00000055500000500055505050550000005500555000000000000005500055000000000000000000000000000000000000000000000000000000000000000000
+00000050500000505050505050500000005050005000000000000005500555000000000000000000000000000000000000000000000000000000000000000000
+00000050500000555050505050555000005550555000000000000000555550000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000055505000555055500550505000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -544,6 +566,7 @@ __gfx__
 00000055005000550005005000555000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000050005000500005005000505000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000050005550555005000550505000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -696,3 +719,7 @@ __label__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
+__sfx__
+910c00001033500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000000000
+010a0000231301c13024200242000e2000f2001020011200086000860000600000000000000000086000860008600000000000000000086000860007600000000000000000000000000000000000000000000000
+011000001005214052170521705200002000020000210652000020000200002000020000200002000021065200002000020000200000000000000000000106520000000000000000000000000000000000000000
