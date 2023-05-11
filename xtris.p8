@@ -16,6 +16,8 @@ elapsed_time = 0
 start_time = 0
 game_over = false
 
+easeManager = nil
+
 GAME_STATE = "MENU"
 
 -->8
@@ -28,6 +30,8 @@ function _init()
     for i=0,64 do
         add(fade_table, 0)
     end
+
+    easeManager = initEaseManager()
 end
 
 function _update()
@@ -38,6 +42,8 @@ function _update()
     elseif (GAME_STATE == "PLAYING") then
         _update_PLAYING()
     end
+
+    easeManager.update(easeManager)
 end
 
 function _draw()
@@ -57,6 +63,8 @@ function _update_MENU()
         -- initialize the menu
         menu = {}
         menu.hovered_level = 1
+        menu.offset = 0
+        menu.transitioning = false
         menu.layout = {}
 
         for idx=1,#levels do
@@ -76,15 +84,25 @@ function _update_MENU()
         end
     end
 
-    if (btnp(0) and menu.hovered_level > 1) then
-        menu.hovered_level -= 1
-    elseif (btnp(1) and menu.hovered_level < #levels) then
-        menu.hovered_level += 1
-    end
+    if (not menu.transitioning) then
+        if (btnp(0) and menu.hovered_level > 1) then
+            menu.transitioning = true
+            easeManager.ease(menu, "offset", menu.offset, menu.offset - 64, 30, function() 
+                menu.hovered_level -=1
+                menu.transitioning = false
+            end)
+        elseif (btnp(1) and menu.hovered_level < #levels) then
+            menu.transitioning = true
+            easeManager.ease(menu, "offset", menu.offset, menu.offset + 64, 30, function() 
+                menu.hovered_level +=1
+                menu.transitioning = false
+            end)
+        end
 
-    if (btnp(4)) then
-        load_level(levels[menu.hovered_level])
-        GAME_STATE = "LOADING"
+        if (btnp(4)) then
+            load_level(levels[menu.hovered_level])
+            GAME_STATE = "LOADING"
+        end
     end
 end
 
@@ -95,17 +113,33 @@ function _draw_MENU()
     for idx,tile in ipairs(menu.layout) do
         if (tile ~= "EMPTY") then
             -- print the rectangle
-            local tile_x = tile.x - ((menu.hovered_level-1) * 64)
+            local tile_x = tile.x - menu.offset
             rectfill(tile_x, tile.y, tile_x+4, tile.y+4, 5)
         end
     end
 
-    if (menu.hovered_level > 1) then
-        print(chr(139), 2, 29, 5)
+    -- lil dots to indicate which page we are on
+    local left_x = 32 - ((#levels * 3) / 2)
+    for i=1,#levels do
+        local color = 5
+        if (i == menu.hovered_level and not menu.transitioning) then
+           color = 3
+        end
+        pset(left_x + ((i-1)*3), 50, color)
     end
 
-    if (menu.hovered_level < #levels) then
-        print(chr(145), 55, 29, 5)
+    -- show an indicator there are more levels this way
+    if (not menu.transitioning) then
+        if (menu.hovered_level > 1) then
+            print(chr(139), 2, 29, 5)
+        end
+
+        if (menu.hovered_level < #levels) then
+            print(chr(145), 55, 29, 5)
+        end
+
+        -- print level number
+        print(pad_num(menu.hovered_level, "level"), 28, 29, 7)
     end
 end
 
@@ -159,7 +193,7 @@ function _update_PLAYING()
 
     -- determine the game end condition
     elapsed_time = t() - start_time
-    if (elapsed_time > 63) then
+    if (elapsed_time > 60) then
         game_over = true
         return
     end
@@ -198,10 +232,10 @@ function _draw_PLAYING()
 
     -- print out the player's points
     local top_left_y = 32 - ((current_level.rows * 10) / 2)
-    print(pad_score(points), 26, top_left_y - 6, 7)
+    print(pad_num(points), 26, top_left_y - 6, 7)
 
     -- show the timer
-    line(0, 63, elapsed_time, 63)
+    line(0, 63, elapsed_time*1.0667, 63)
 
     -- draw the tiles
     for idx,tile in ipairs(tiles) do
@@ -225,13 +259,23 @@ end
 
 -->8
 -- helper functions
-function pad_score(score)
-    if (score < 10) then
-        return "00"..score
-    elseif (score < 100) then
-        return "0"..score
-    else
-        return score
+function pad_num(num, type)
+    local t = type or "score"
+
+    if (t == "score") then
+        if (num < 10) then
+            return "00"..num
+        elseif (num < 100) then
+            return "0"..num
+        else
+            return num
+        end
+    elseif (t == "level") then
+        if (num < 10) then
+            return "0"..num
+        else
+            return num
+        end
     end
 end
 
@@ -246,6 +290,7 @@ function load_level(level)
     -- set global data
     player_idx = level.start
     game_over = false
+    fade_idx = 1
 
     current_level.rows = level.rows
     current_level.cols = level.cols
@@ -295,41 +340,127 @@ function check_down()
     return (player_idx + current_level.cols <= #tiles) and (tiles[player_idx + current_level.cols] ~= "EMPTY")
 end
 
+-- t: current frame
+-- b: starting value
+-- c: desired delta
+-- d: total frames
+function easeInOutQuad(t,b,c,d)
+    t /= d/2
+    if (t < 1) return c/2*t*t + b
+    t -= 1
+    return -c/2 * (t*(t-2) - 1) + b
+  end
+  
+  function initEaseManager()
+    local easeManager = {}
+  
+    easeManager.list = {}
+  
+    easeManager.ease = function(obj, field, start, final, duration, callback)
+      local c = cocreate(function() 
+        for i=1,duration do
+          obj[field] = easeInOutQuad(i, start, final-start, duration)
+          yield()
+        end
+        obj[field] = final
+        if (callback ~= nil) then
+          callback()
+        end
+      end)
+  
+      add(easeManager.list, c)
+    end
+  
+    easeManager.update = function(self)
+      for c in all(self.list) do
+        if costatus(c) then
+          coresume(c)
+        else
+          del(self.list, c)
+        end
+      end
+    end
+  
+    return easeManager
+  end
+
 -->8
 -- level layouts
-level1 = {
-    rows = 2,
-    cols = 3,
-    start = 1,
-    tiles = {
-        true,  true, true,
-        false, true, false,
+
+levels = {
+    {
+        rows = 2,
+        cols = 3,
+        start = 1,
+        tiles = {
+            true,  true, true,
+            false, true, false,
+        }
+    },
+    {
+        rows = 2,
+        cols = 3,
+        start = 2,
+        tiles = {
+            true, true , true,
+            true, false, true,
+        }
+    },
+    {
+        rows = 3,
+        cols = 3,
+        start = 5,
+        tiles = {
+            false, true, false,
+            true , true, true ,
+            false, true, false,
+        }
+    },
+    {
+        rows = 3,
+        cols = 3,
+        start = 8,
+        tiles = {
+            true, true , true,
+            true, false, true,
+            true, true , true,
+        }
+    },
+    {
+        rows = 4,
+        cols = 3,
+        start = 5,
+        tiles = {
+            false, true, false,
+            true , true, false,
+            false, true, true ,
+            false, true, false,
+        }
+    },
+    {
+        rows = 4,
+        cols = 3,
+        start = 8,
+        tiles = {
+            false, true , false,
+            false, true , false,
+            true , true , true ,
+            true , false, false,
+        }
+    },
+    {
+        rows = 5,
+        cols = 6,
+        start = 14,
+        tiles = {
+            false, true, true, false, false, false,
+            true, true, false, true, false, false,
+            true, true, true, true, true, true,
+            true, true, true, false, false, false,
+            true, true, true, false, false, false,
+        }
     }
 }
-
-level2 = {
-    rows = 3,
-    cols = 3,
-    start = 5,
-    tiles = {
-        false, true, false,
-        true,  true, true,
-        false, true, false,
-    }
-}
-
-level3 = {
-    rows = 3,
-    cols = 3,
-    start = 5,
-    tiles = {
-        true, true, true,
-        true, true, true,
-        true, true, true,
-    }
-}
-
-levels = { level1, level2, level3 }
 
 __label__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
