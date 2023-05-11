@@ -3,17 +3,24 @@ version 39
 __lua__
 -- xtris - a game by fletch
 -- globals
-tiles = {
-    {x=18,y=22},
-    {x=28,y=22},
-    {x=38,y=22},
-    {x=28,y=32}
+
+level1 = {
+    rows = 2,
+    cols = 3,
+    start = 1,
+    tiles = {
+        true,  true, true,
+        false, true, false,
+    }
 }
 
+current_level = {}
+tiles = {}
+
 points = 0
-goal_idx = 4
-player_idx = 1
-fade_idx = 1
+goal_idx = nil
+player_idx = nil
+fade_idx = nil
 fade_table = {}
 elapsed_time = 0
 game_over = false
@@ -28,6 +35,9 @@ function _init()
     for i=0,64 do
         add(fade_table, 0)
     end
+
+    -- load the level
+    load_level(level1)
 end
 
 function _update()
@@ -49,21 +59,21 @@ function _update()
     end
 
     -- if we haven't hit game end condition yet, we fall here
-    if (btnp(0) and (player_idx == 2 or player_idx == 3)) then -- left was pressed
+    if (btnp(0) and check_left()) then -- left was pressed
         player_idx -= 1
-    elseif (btnp(1) and (player_idx == 1 or player_idx == 2)) then -- right was pressed
+    elseif (btnp(1) and check_right()) then -- right was pressed
         player_idx += 1
-    elseif (btnp(2) and player_idx == 4) then -- up was pressed
-        player_idx = 2
-    elseif (btnp(3) and player_idx == 2) then -- down was pressed
-        player_idx = 4
+    elseif (btnp(2) and check_up()) then -- up was pressed
+        player_idx -= current_level.cols
+    elseif (btnp(3) and check_down()) then -- down was pressed
+        player_idx += current_level.cols
     end
 
     -- check to see if we've hit the goal
     if (player_idx == goal_idx) then
         points += 1
-        while (goal_idx == player_idx) do 
-            goal_idx = rnd({1, 2, 3, 4})
+        while (goal_idx == player_idx or tiles[goal_idx] == "EMPTY") do 
+            goal_idx = rnd(#tiles)\1 + 1
         end
 
         fade_tile(player_idx)
@@ -73,7 +83,7 @@ end
 function _draw()
     cls(0)
 
-    -- iterate over each pixel in the fade_idx tile - if we see a green pixel, roll a dice to see if we should set it to black
+    -- draw the fade array to the fade tile
     for i=0,64 do
         local top_x, top_y = tiles[fade_idx].x, tiles[fade_idx].y
         local pixel_color = fade_table[i+1]
@@ -81,30 +91,27 @@ function _draw()
     end
 
     -- print out the player's points
-    print(pad_score(points), 27, 15, 7)
-
-    -- game over text
-    if (game_over) then
-        print("ctrl+r to retry", 2, 50, 7)
-    end
+    print(pad_score(points), 0, 0, 7)
 
     -- show the timer
     line(0, 63, elapsed_time, 63)
 
     -- draw the tiles
     for idx,tile in ipairs(tiles) do
-        local                           color = 5 -- dark grey
-        if (game_over) then             color = 8 -- red
-        elseif (idx == goal_idx) then   color = 3 -- dark green
-        elseif (idx == player_idx) then color = 7 -- white
-        end
+        if (tile ~= "EMPTY") then
+            local                           color = 5 -- dark grey
+            if (game_over) then             color = 8 -- red
+            elseif (idx == goal_idx) then   color = 3 -- dark green
+            elseif (idx == player_idx) then color = 7 -- white
+            end
 
-        -- print the rectangle
-        rect(tile.x, tile.y, tile.x+8, tile.y+8, color)
+            -- print the rectangle
+            rect(tile.x, tile.y, tile.x+8, tile.y+8, color)
 
-        -- print the X if we're in a goal slot
-        if (idx == goal_idx) then
-            print("x", tile.x+3, tile.y+2, color)
+            -- print the X if we're in a goal slot
+            if (idx == goal_idx) then
+                print("x", tile.x+3, tile.y+2, color)
+            end
         end
     end
 end
@@ -128,17 +135,62 @@ function fade_tile(tile_idx)
     end
 end
 
+function load_level(level)
+    -- set player position
+    player_idx = level.start
+
+    current_level.rows = level.rows
+    current_level.cols = level.cols
+
+    local top_left_x = 32 - ((level.cols * 10) / 2)
+    local top_left_y = 32 - ((level.rows * 10) / 2)
+
+    for idx,tile in ipairs(level.tiles) do
+        if (tile) then
+            add(tiles, {
+                x=top_left_x + ((idx-1)%level.cols * 10),
+                y=top_left_y + ((idx-1)\level.cols * 10)
+            })
+        else
+            add(tiles, "EMPTY")
+        end
+    end
+
+    -- set goal position
+    while (goal_idx == nil or goal_idx == player_idx or tiles[goal_idx] == "EMPTY") do 
+        goal_idx = rnd(#tiles)\1 + 1
+    end
+
+    fade_idx = goal_idx
+end
+
+function check_left()
+    return (player_idx % current_level.cols ~= 1) and (tiles[player_idx - 1] ~= "EMPTY")
+end
+
+function check_right()
+    return (player_idx % current_level.cols ~= 0) and (tiles[player_idx + 1] ~= "EMPTY")
+end
+
+function check_up()
+    return (player_idx - current_level.cols > 0) and (tiles[player_idx - current_level.cols] ~= "EMPTY")
+end
+
+function check_down()
+    return (player_idx + current_level.cols <= #tiles) and (tiles[player_idx + current_level.cols] ~= "EMPTY")
+end
+
 __label__
-77777700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77777700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77007700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77007700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77007700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77007700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77007700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77007700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77777700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77777700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -255,6 +307,6 @@ __label__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77777777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77777777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
