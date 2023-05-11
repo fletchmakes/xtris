@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 39
+version 41
 __lua__
 -- xtris - a game by fletch
 -- globals
@@ -11,6 +11,28 @@ level1 = {
     tiles = {
         true,  true, true,
         false, true, false,
+    }
+}
+
+level2 = {
+    rows = 3,
+    cols = 3,
+    start = 5,
+    tiles = {
+        false, true, false,
+        true,  true, true,
+        false, true, false,
+    }
+}
+
+level3 = {
+    rows = 3,
+    cols = 3,
+    start = 5,
+    tiles = {
+        true, true, true,
+        true, true, true,
+        true, true, true,
     }
 }
 
