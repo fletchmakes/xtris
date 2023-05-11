@@ -3,41 +3,9 @@ version 41
 __lua__
 -- xtris - a game by fletch
 -- globals
-
-level1 = {
-    rows = 2,
-    cols = 3,
-    start = 1,
-    tiles = {
-        true,  true, true,
-        false, true, false,
-    }
-}
-
-level2 = {
-    rows = 3,
-    cols = 3,
-    start = 5,
-    tiles = {
-        false, true, false,
-        true,  true, true,
-        false, true, false,
-    }
-}
-
-level3 = {
-    rows = 3,
-    cols = 3,
-    start = 5,
-    tiles = {
-        true, true, true,
-        true, true, true,
-        true, true, true,
-    }
-}
-
 current_level = {}
 tiles = {}
+menu = nil
 
 points = 0
 goal_idx = nil
@@ -45,7 +13,10 @@ player_idx = nil
 fade_idx = nil
 fade_table = {}
 elapsed_time = 0
+start_time = 0
 game_over = false
+
+GAME_STATE = "MENU"
 
 -->8
 -- lifecycle functions
@@ -57,12 +28,121 @@ function _init()
     for i=0,64 do
         add(fade_table, 0)
     end
-
-    -- load the level
-    load_level(level1)
 end
 
 function _update()
+    if (GAME_STATE == "MENU") then
+        _update_MENU()
+    elseif (GAME_STATE == "LOADING") then
+        _update_LOADING()
+    elseif (GAME_STATE == "PLAYING") then
+        _update_PLAYING()
+    end
+end
+
+function _draw()
+    if (GAME_STATE == "MENU") then
+        _draw_MENU()
+    elseif (GAME_STATE == "LOADING") then
+        _draw_LOADING()
+    elseif (GAME_STATE == "PLAYING") then
+        _draw_PLAYING()
+    end
+end
+
+-->8
+-- GAME_STATE - MENU
+function _update_MENU()
+    if (menu == nil) then
+        -- initialize the menu
+        menu = {}
+        menu.hovered_level = 1
+        menu.layout = {}
+
+        for idx=1,#levels do
+            local top_left_x = 32 - ((levels[idx].cols * 6) / 2) + ((idx-1) * 64)
+            local top_left_y = 32 - ((levels[idx].rows * 6) / 2)
+        
+            for tile_idx,tile in ipairs(levels[idx].tiles) do
+                if (tile) then
+                    add(menu.layout, {
+                        x=top_left_x + ((tile_idx-1)%levels[idx].cols * 6),
+                        y=top_left_y + ((tile_idx-1)\levels[idx].cols * 6)
+                    })
+                else
+                    add(menu.layout, "EMPTY")
+                end
+            end
+        end
+    end
+
+    if (btnp(0) and menu.hovered_level > 1) then
+        menu.hovered_level -= 1
+    elseif (btnp(1) and menu.hovered_level < #levels) then
+        menu.hovered_level += 1
+    end
+
+    if (btnp(4)) then
+        load_level(levels[menu.hovered_level])
+        GAME_STATE = "LOADING"
+    end
+end
+
+function _draw_MENU()
+    cls(0)
+
+    -- draw the tiles
+    for idx,tile in ipairs(menu.layout) do
+        if (tile ~= "EMPTY") then
+            -- print the rectangle
+            local tile_x = tile.x - ((menu.hovered_level-1) * 64)
+            rectfill(tile_x, tile.y, tile_x+4, tile.y+4, 5)
+        end
+    end
+
+    if (menu.hovered_level > 1) then
+        print(chr(139), 2, 29, 5)
+    end
+
+    if (menu.hovered_level < #levels) then
+        print(chr(145), 55, 29, 5)
+    end
+end
+
+-->8
+-- GAME_STATE - LOADING
+function _update_LOADING()
+    -- determine the game end condition
+    local loading_timer = 3 - (t() - start_time)
+    if (loading_timer < 0) then
+        GAME_STATE = "PLAYING"
+        start_time = t()
+    end
+end
+
+function _draw_LOADING()
+    cls(0)
+
+    -- print out the player's points
+    local top_left_y = 32 - ((current_level.rows * 10) / 2)
+    print("000", 26, top_left_y - 6, 7)
+
+    -- show the timer
+    local loading_timer = 3 - (t() - start_time)
+    line(0, 63, loading_timer * 20, 63, 8)
+
+    -- draw the tiles
+    for idx,tile in ipairs(tiles) do
+        if (tile ~= "EMPTY") then
+            -- print the rectangle
+            rect(tile.x, tile.y, tile.x+8, tile.y+8, 5)
+        end
+    end
+end
+
+-->8
+-- GAME_STATE - PLAYING
+function _update_PLAYING()
     -- iterate over each pixel in the fade_idx tile - if we see a green pixel, roll a dice to see if we should set it to black
     for i=0,64 do
         local top_x, top_y = tiles[fade_idx].x, tiles[fade_idx].y
@@ -73,8 +153,12 @@ function _update()
         end
     end
 
+    if (btnp(4) and game_over) then
+        GAME_STATE = "MENU"
+    end
+
     -- determine the game end condition
-    elapsed_time = t()
+    elapsed_time = t() - start_time
     if (elapsed_time > 63) then
         game_over = true
         return
@@ -102,7 +186,7 @@ function _update()
     end
 end
 
-function _draw()
+function _draw_PLAYING()
     cls(0)
 
     -- draw the fade array to the fade tile
@@ -113,7 +197,8 @@ function _draw()
     end
 
     -- print out the player's points
-    print(pad_score(points), 0, 0, 7)
+    local top_left_y = 32 - ((current_level.rows * 10) / 2)
+    print(pad_score(points), 26, top_left_y - 6, 7)
 
     -- show the timer
     line(0, 63, elapsed_time, 63)
@@ -158,14 +243,18 @@ function fade_tile(tile_idx)
 end
 
 function load_level(level)
-    -- set player position
+    -- set global data
     player_idx = level.start
+    game_over = false
 
     current_level.rows = level.rows
     current_level.cols = level.cols
 
+    -- determine tile positions
     local top_left_x = 32 - ((level.cols * 10) / 2)
     local top_left_y = 32 - ((level.rows * 10) / 2)
+
+    tiles = {}
 
     for idx,tile in ipairs(level.tiles) do
         if (tile) then
@@ -184,6 +273,10 @@ function load_level(level)
     end
 
     fade_idx = goal_idx
+
+    -- finalize setup
+    start_time = t()
+    points = 0
 end
 
 function check_left()
@@ -201,6 +294,42 @@ end
 function check_down()
     return (player_idx + current_level.cols <= #tiles) and (tiles[player_idx + current_level.cols] ~= "EMPTY")
 end
+
+-->8
+-- level layouts
+level1 = {
+    rows = 2,
+    cols = 3,
+    start = 1,
+    tiles = {
+        true,  true, true,
+        false, true, false,
+    }
+}
+
+level2 = {
+    rows = 3,
+    cols = 3,
+    start = 5,
+    tiles = {
+        false, true, false,
+        true,  true, true,
+        false, true, false,
+    }
+}
+
+level3 = {
+    rows = 3,
+    cols = 3,
+    start = 5,
+    tiles = {
+        true, true, true,
+        true, true, true,
+        true, true, true,
+    }
+}
+
+levels = { level1, level2, level3 }
 
 __label__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
