@@ -87,13 +87,13 @@ function _update_MENU()
     if (not menu.transitioning) then
         if (btnp(0) and menu.hovered_level > 1) then
             menu.transitioning = true
-            easeManager.ease(menu, "offset", menu.offset, menu.offset - 64, 30, function() 
+            easeManager.ease(menu, "offset", menu.offset, menu.offset - 64, 15, function() 
                 menu.hovered_level -=1
                 menu.transitioning = false
             end)
         elseif (btnp(1) and menu.hovered_level < #levels) then
             menu.transitioning = true
-            easeManager.ease(menu, "offset", menu.offset, menu.offset + 64, 30, function() 
+            easeManager.ease(menu, "offset", menu.offset, menu.offset + 64, 15, function() 
                 menu.hovered_level +=1
                 menu.transitioning = false
             end)
