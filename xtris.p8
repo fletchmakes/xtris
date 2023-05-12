@@ -35,6 +35,9 @@ s_confirm =2
 -->8
 -- lifecycle functions
 function _init()
+    -- load save data
+    cartdata("fletch_xtris_v0")
+
     -- set to 64x64 mode
     poke(0x5f2c,3)
 
@@ -137,7 +140,7 @@ function _draw_MENU()
     end
 
     if (menu.hovered_level == 0) then
-
+        -- if we're on the title screen, do nothing
     else
         -- lil dots to indicate which page we are on
         if (menu.offset > 63) then -- extreme hack but it works - don't show the pages on the menu screen
@@ -162,7 +165,13 @@ function _draw_MENU()
             end
 
             -- print level number
+            rectfill(27, 28, 35, 34, 0)
             print(pad_num(menu.hovered_level, "level"), 28, 29, 7)
+
+            -- print high score
+            rectfill(25, 40, 37, 46, 0)
+            local score = dget(menu.hovered_level) or 0
+            print(pad_num(score), 26, 41, 3)
         end
     end
 end
@@ -213,6 +222,9 @@ function _update_PLAYING()
     end
 
     if (btnp(k_confirm) and game_over) then
+        if (dget(menu.hovered_level) < points) then
+            dset(menu.hovered_level, points)
+        end
         GAME_STATE = "MENU"
     end
 
@@ -416,7 +428,6 @@ function easeInOutQuad(t,b,c,d)
 
 -->8
 -- level layouts
-
 levels = {
     {
         rows = 2,
@@ -722,4 +733,4 @@ __label__
 __sfx__
 910c00001033500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000000000
 010a0000231301c13024200242000e2000f2001020011200086000860000600000000000000000086000860008600000000000000000086000860007600000000000000000000000000000000000000000000000
-011000001005214052170521705200002000020000210652000020000200002000020000200002000021065200002000020000200000000000000000000106520000000000000000000000000000000000000000
+011000001004214042170421704200002000020000210622000020000200002000020000200002000021062200002000020000200000000000000000000106220000000000000000000000000000000000000000
