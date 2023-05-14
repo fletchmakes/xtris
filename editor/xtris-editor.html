@@ -26,7 +26,7 @@
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                      <button type="button" class="btn btn-primary">Play Level</button>
+                      <button type="button" class="btn btn-primary" id="playLevelButton">Play Level</button>
                     </div>
                   </div>
                 </div>
@@ -153,8 +153,42 @@
             function validateLevel() {
                 const resultsDiv = document.getElementById('levelResultList')
 
-                createAlert(resultsDiv, "Example Alert")
-                createAlert(resultsDiv, "Example Alert 2")
+                // clear the results list first
+                removeAllChildNodes(resultsDiv)
+
+                // add relevant warnings
+                var hasErrors = false
+                
+                // check number of start squares
+                var numStartFields = 0
+                for (let row = 0; row < 5; row++) {
+                    for (let col = 0; col < 6; col++) {
+                        if (game_grid[row][col] === 2) {
+                            numStartFields++
+                        }
+                    }
+                }
+
+                if (numStartFields === 0) {
+                    hasErrors = true
+                    createAlert(resultsDiv, "You must include a starting location.")
+                } else if (numStartFields > 1) {
+                    hasErrors = true
+                    createAlert(resultsDiv, "You can only have ONE starting location.")
+                }
+
+                // check for continuity
+
+                // check for islands
+
+                // if there were no errors, show a success
+                if (hasErrors === false) {
+                    createSuccess(resultsDiv, "Your level is valid!")
+                }
+
+                // disable / enable the play button based on warnings
+                const playButton = document.getElementById("playLevelButton")
+                playButton.disabled = hasErrors
 
                 const modal = new bootstrap.Modal(document.getElementById('validateModal'))
                 modal.show()
@@ -169,6 +203,23 @@
                 node.classList.add("alert-danger")
 
                 parentNode.appendChild(node)
+            }
+
+            function createSuccess(parentNode, text) {
+                const node = document.createElement("div")
+                const nodeText = document.createTextNode(text)
+                node.appendChild(nodeText)
+
+                node.classList.add("alert")
+                node.classList.add("alert-success")
+
+                parentNode.appendChild(node)
+            }
+
+            function removeAllChildNodes(parent) {
+                while (parent.firstChild) {
+                    parent.removeChild(parent.firstChild);
+                }
             }
 
             function squareClicked(event) {
