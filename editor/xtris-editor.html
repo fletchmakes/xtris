@@ -33,7 +33,7 @@
 
             <!-- banner -->
             <div class="row d-flex justify-content-center">
-                <img style="max-width: fit-content;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAACACAYAAAB9V9ELAAAAAXNSR0IArs4c6QAAAzBJREFUeJzt3bFNY0EUQNHvlXNSukJEhNRBBdRBuBGiK1Iq8HZgaxl9j8f3nNQyf+zAezXSe3vYtu20Adyg08/32dcPD49XOskco5//9eXp7Osff7/++0wrGf389/79/Zl9AADg+gQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgKDj7AMA/Nbp53v2EZb2+vI0+whLW/37cwMAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAEDQYdu20+xDAADX5QYAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAICg4+wDDHt/Pv/62+eu79/7/yM/PDx6/oDR840+H6a69PtWd+nfhzvnBgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgKD19wBMNjonv/ec+d5z/LM//+zvF5Z273Pw9iCc5QYAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAICg9fcAXJpjvTQHeudzsPU5+b33HEDa6O9r/Pd5NjcAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAErb8HwBzqWZfm2FffEzB6vtE9AQCrcgMAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAEDQ+nsAmGp0jn50D8Ho8299zwHctPieldW5AQCAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIGj9PQCjc6Q7z6HuPWc++vdnv3/U7OdD2uicvz0BU7kBAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAg6Dj7AAAs6u1z7vsZ4gYAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgewAAqt6fZ5+AidwAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQdNi27TT7EADAdbkBAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAg6B8KsmXPoiNlFAAAAABJRU5ErkJggg==" />
+                <img onclick="window.open('https:\/\/fletchmakesstuff.itch.io/xtris', '_blank')" style="max-width: fit-content;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAACACAYAAAB9V9ELAAAAAXNSR0IArs4c6QAAAzBJREFUeJzt3bFNY0EUQNHvlXNSukJEhNRBBdRBuBGiK1Iq8HZgaxl9j8f3nNQyf+zAezXSe3vYtu20Adyg08/32dcPD49XOskco5//9eXp7Osff7/++0wrGf389/79/Zl9AADg+gQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgKDj7AMA/Nbp53v2EZb2+vI0+whLW/37cwMAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAEDQYdu20+xDAADX5QYAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAICg4+wDDHt/Pv/62+eu79/7/yM/PDx6/oDR840+H6a69PtWd+nfhzvnBgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgKD19wBMNjonv/ec+d5z/LM//+zvF5Z273Pw9iCc5QYAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAICg9fcAXJpjvTQHeudzsPU5+b33HEDa6O9r/Pd5NjcAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAErb8HwBzqWZfm2FffEzB6vtE9AQCrcgMAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAEDQ+nsAmGp0jn50D8Ho8299zwHctPieldW5AQCAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIGj9PQCjc6Q7z6HuPWc++vdnv3/U7OdD2uicvz0BU7kBAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAg6Dj7AAAs6u1z7vsZ4gYAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgewAAqt6fZ5+AidwAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQdNi27TT7EADAdbkBAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAg6B8KsmXPoiNlFAAAAABJRU5ErkJggg==" />
             </div>
 
             <!-- editor grid -->
@@ -99,8 +99,11 @@
             var start = 0
             var tile_string = ""
 
+            var selected_tiles = 0
+            var visited = []
+
             var game_code = `
-            poke(0x5f2c,3)p=0g=1i=1l=0c=color q=btnp
+            poke(0x5f2c,3)p=0g=level.start i=level.start l=0c=color q=btnp
             tx=32-((level.cols*10)/2)
             ty=32-((level.rows*10)/2)
             a,b={},{}
@@ -146,11 +149,10 @@
             function navigateToLink() {
                 calculateLevelDetails()
                 var level = `level={rows=${rows},cols=${cols},start=${start},tiles={${tile_string}}}`
-                console.log(level)
 
                 var codeEncoded = uriSafeEncode(Base64.encode(level + game_code))
                 var url = `https://pico-8-edu.com/?c=${codeEncoded}`
-                // window.open(url, '_blank')
+                window.open(url, '_blank')
             }
 
             function validateLevel() {
@@ -164,6 +166,7 @@
                 
                 var numStartFields = 0
                 var numFields = 0
+                var test_location = null
                 for (let row = 0; row < 5; row++) {
                     for (let col = 0; col < 6; col++) {
                         if (game_grid[row][col] === 2) {
@@ -171,6 +174,9 @@
                         }
                         if (game_grid[row][col] > 0) {
                             numFields++
+                            if (test_location === null) {
+                                test_location = {x: row, y: col}
+                            }
                         }
                     }
                 }
@@ -185,8 +191,18 @@
                 }
 
                 // check for continuity
+                if (test_location !== null) {
+                    visited = []
 
-                // check for islands
+                    findConnectedTiles(test_location)
+                    const connected_tiles = visited.length
+
+                    if (connected_tiles !== selected_tiles) {
+                        hasErrors = true
+                        createAlert(resultsDiv, "The level must be contiguous and fully connected.")
+                    }
+                }
+                
 
                 // check for more than 1 selected tile
                 if (numFields < 2) {
@@ -250,8 +266,7 @@
                 for (let x = top_left_x; x <= bottom_right_x; x++) {
                     for (let y = top_left_y; y <= bottom_right_y; y++) {
                         if (game_grid[x][y] === 2) {
-                            // TODO: this is bronken right now and needs fixing
-                            start = ((y - top_left_y) * cols) + (x - top_left_x)
+                            start = ((x - top_left_x) * cols) + (y - top_left_y) + 1
                         }
                         if (game_grid[x][y] > 0) {
                             tile_string = tile_string + "true,"
@@ -301,13 +316,39 @@
                     if (target.src === empty_square) {
                         target.src = filled_square
                         game_grid[row][col] = 1
+                        selected_tiles++
                     } else if (target.src === filled_square) {
                         target.src = start_square
                         game_grid[row][col] = 2
                     } else if (target.src === start_square) {
                         target.src = empty_square
                         game_grid[row][col] = 0
+                        selected_tiles--
                     }
+                }
+            }
+
+            // this will populate the `visited` list - we can use it's length to determine connectedness
+            function findConnectedTiles(test) {
+                // check left
+                if (test.x-1 >= 0 && game_grid[test.x-1][test.y] > 0 && !visited.some(tile => tile.x === test.x-1 && tile.y === test.y)) {
+                    visited.push({x:test.x-1,y:test.y})
+                    findConnectedTiles({x:test.x-1,y:test.y})
+                }
+                // check right
+                if (test.x+1 < 5 && game_grid[test.x+1][test.y] > 0 && !visited.some(tile => tile.x === test.x+1 && tile.y === test.y)) {
+                    visited.push({x:test.x+1,y:test.y})
+                    findConnectedTiles({x:test.x+1,y:test.y})
+                }
+                // check up
+                if (test.y-1 >= 0 && game_grid[test.x][test.y-1] > 0 && !visited.some(tile => tile.x === test.x && tile.y === test.y-1)) {
+                    visited.push({x:test.x,y:test.y-1})
+                    findConnectedTiles({x:test.x,y:test.y-1})
+                }
+                // check down
+                if (test.y+1 < 6 && game_grid[test.x][test.y+1] > 0 && !visited.some(tile => tile.x === test.x && tile.y === test.y+1)) {
+                    visited.push({x:test.x,y:test.y+1})
+                    findConnectedTiles({x:test.x,y:test.y+1})
                 }
             }
         </script>
