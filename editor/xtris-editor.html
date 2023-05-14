@@ -25,7 +25,7 @@
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                      <button type="button" class="btn btn-primary" id="playLevelButton">Play Level</button>
+                      <button type="button" class="btn btn-primary" id="playLevelButton" onclick="navigateToLink()">Play Level</button>
                     </div>
                   </div>
                 </div>
@@ -94,6 +94,11 @@
             var filled_square = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAAAXNSR0IArs4c6QAAAN9JREFUeJzt3DEOg0AMAEFA6dPy/9fR8oLLF06sEIkyU7uwVq69jvMYC5dtTy/w6wSMBIwEjASMBIwEjASMBIxes4Pre79zj68zzmNqzgVGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkbTv7Nmf0n9GxcYCRgJGAkYCRgJGAkYCRgJGH0AL+kKUzyOjJwAAAAASUVORK5CYII="
             var start_square = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAAAXNSR0IArs4c6QAAAPZJREFUeJzt28ENwjAQAMGAaDDlUEHKoURo4cQGJUQzbz+s1T1i2bkt2/pe+Nr96A38OwEjASMBIwEjASMBIwEjAaPHeOXz9cNtnNC2jpaZwEjASMBIwEjASMBIwEjASMBofhKZGn7B7+6gk5IJjASMBIwEjASMBIwEjASMBIwEjASMBIwEjASMBIwEjASMBIwEjPa/E5m6yGsvExgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRgJGAkYCRjtfydykbuOKRMYCRgJGAkYCRgJGAkYCRgJGM1PIkf9iX5yJjASMBIwEjASMBIwEjASMBIw+gCXBgmp9PdbDgAAAABJRU5ErkJggg=="
 
+            var rows = 0
+            var cols = 0
+            var start = 0
+            var tile_string = ""
+
             var game_code = `
             poke(0x5f2c,3)p=0g=1i=1l=0c=color q=btnp
             tx=32-((level.cols*10)/2)
@@ -139,14 +144,13 @@
             }
 
             function navigateToLink() {
-                var rows = 2
-                var cols = 3
-                var start = 1
-                var level = `level={rows=${rows},cols=${cols},start=${start},tiles={true,true,true,false,true,false}}`
+                calculateLevelDetails()
+                var level = `level={rows=${rows},cols=${cols},start=${start},tiles={${tile_string}}}`
+                console.log(level)
 
                 var codeEncoded = uriSafeEncode(Base64.encode(level + game_code))
                 var url = `https://pico-8-edu.com/?c=${codeEncoded}`
-                window.open(url, '_blank')
+                // window.open(url, '_blank')
             }
 
             function validateLevel() {
@@ -158,16 +162,20 @@
                 // add relevant warnings
                 var hasErrors = false
                 
-                // check number of start squares
                 var numStartFields = 0
+                var numFields = 0
                 for (let row = 0; row < 5; row++) {
                     for (let col = 0; col < 6; col++) {
                         if (game_grid[row][col] === 2) {
                             numStartFields++
                         }
+                        if (game_grid[row][col] > 0) {
+                            numFields++
+                        }
                     }
                 }
 
+                // check number of start squares
                 if (numStartFields === 0) {
                     hasErrors = true
                     createAlert(resultsDiv, "You must include a starting location.")
@@ -180,6 +188,12 @@
 
                 // check for islands
 
+                // check for more than 1 selected tile
+                if (numFields < 2) {
+                    hasErrors = true
+                    createAlert(resultsDiv, "There must be at least 2 contiguous tiles in a level.")
+                }
+
                 // if there were no errors, show a success
                 if (hasErrors === false) {
                     createSuccess(resultsDiv, "Your level is valid!")
@@ -191,6 +205,61 @@
 
                 const modal = new bootstrap.Modal(document.getElementById('validateModal'))
                 modal.show()
+            }
+
+            function calculateLevelDetails() {
+                var top_left_x = 0
+                var top_left_y = 0
+                var bottom_right_x = 4
+                var bottom_right_y = 5
+
+                // identify the smallest bounding box
+                for (let x = top_left_x; x < 6; x++) {
+                    if (game_grid[x][0] > 0 || game_grid[x][1] > 0 || game_grid[x][2] > 0 || game_grid[x][3] > 0 || game_grid[x][4] > 0 || game_grid[x][5] > 0) {
+                        top_left_x = x
+                        break
+                    }
+                }
+
+                for (let x = bottom_right_x; x > 0; x--) {
+                    if (game_grid[x][0] > 0 || game_grid[x][1] > 0 || game_grid[x][2] > 0 || game_grid[x][3] > 0 || game_grid[x][4] > 0 || game_grid[x][5] > 0) {
+                        bottom_right_x = x
+                        break
+                    }
+                }
+
+                for (let y = top_left_y; y < 5; y++) {
+                    if (game_grid[0][y] > 0 || game_grid[1][y] > 0 || game_grid[2][y] > 0 || game_grid[3][y] > 0 || game_grid[4][y] > 0) {
+                        top_left_y = y
+                        break
+                    }
+                }
+
+                for (let y = bottom_right_y; y > 0; y--) {
+                    if (game_grid[0][y] > 0 || game_grid[1][y] > 0 || game_grid[2][y] > 0 || game_grid[3][y] > 0 || game_grid[4][y] > 0) {
+                        bottom_right_y = y
+                        break
+                    }
+                }
+
+                // set data
+                cols = bottom_right_y - top_left_y + 1
+                rows = bottom_right_x - top_left_x + 1
+                tile_string = ""
+
+                for (let x = top_left_x; x <= bottom_right_x; x++) {
+                    for (let y = top_left_y; y <= bottom_right_y; y++) {
+                        if (game_grid[x][y] === 2) {
+                            // TODO: this is bronken right now and needs fixing
+                            start = ((y - top_left_y) * cols) + (x - top_left_x)
+                        }
+                        if (game_grid[x][y] > 0) {
+                            tile_string = tile_string + "true,"
+                        } else {
+                            tile_string = tile_string + "false,"
+                        }
+                    }
+                }
             }
 
             function createAlert(parentNode, text) {
