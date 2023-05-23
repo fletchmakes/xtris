@@ -293,7 +293,7 @@ function _draw_PLAYING()
     print(pad_num(points), 26, top_left_y - 6, 7)
 
     -- show the timer
-    line(0, 63, elapsed_time*1.0667, 63)
+    line(0, 63, elapsed_time*1.0667, 63, 7 + (game_over and 1 or 0))
 
     -- draw the tiles
     for idx,tile in ipairs(tiles) do
