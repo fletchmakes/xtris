@@ -1,7 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
--- xtris - a game by fletch
+-- xtris
+-- a game by fletch
 
 -- globals
 current_level = {}
@@ -150,11 +151,12 @@ function _draw_MENU()
     end
 
     if (menu.hovered_level == 0 and not menu.transitioning) then
-        if (not muted) then
-            print("❎".." sound", 60 - (#("❎".." sound")*4), 58, 2)
-        else
-            print("❎".." quiet", 60 - (#("❎".." quiet")*4), 58, 2)
+        local color = 3
+        if (muted) then 
+            color = 5
+            line(55, 58, 60, 62, color)
         end
+        print("❎"..chr(141), 47, 58, color)
     else
         -- lil dots to indicate which page we are on
         if (menu.offset > 63) then -- extreme hack but it works - don't show the pages on the menu screen
