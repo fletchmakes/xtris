@@ -20,6 +20,7 @@ game_over = false
 easeManager = nil
 
 GAME_STATE = "MENU"
+muted = false
 
 -- key mapping
 k_left = 0
@@ -27,6 +28,7 @@ k_right = 1
 k_up = 2
 k_down = 3
 k_confirm = 4
+k_mute = 5
 
 -- sound mapping
 s_button = 0
@@ -102,14 +104,14 @@ function _update_MENU()
 
     if (not menu.transitioning) then
         if (btnp(k_left) and menu.hovered_level > 0) then
-            sfx(s_button)
+            play_sfx(s_button)
             menu.transitioning = true
             easeManager.ease(menu, "offset", menu.offset, menu.offset - 64, 15, function() 
                 menu.hovered_level -=1
                 menu.transitioning = false
             end)
         elseif (btnp(k_right) and menu.hovered_level < #levels) then
-            sfx(s_button)
+            play_sfx(s_button)
             menu.transitioning = true
             easeManager.ease(menu, "offset", menu.offset, menu.offset + 64, 15, function() 
                 menu.hovered_level +=1
@@ -118,9 +120,16 @@ function _update_MENU()
         end
 
         if (btnp(k_confirm) and menu.hovered_level > 0) then
-            sfx(s_confirm)
+            play_sfx(s_confirm)
             load_level(levels[menu.hovered_level])
             GAME_STATE = "LOADING"
+        end
+
+        if (btnp(k_mute) and menu.hovered_level == 0) then
+            muted = (not muted)
+            if (not muted) then
+                play_sfx(s_button)
+            end
         end
     end
 end
@@ -140,8 +149,12 @@ function _draw_MENU()
         end
     end
 
-    if (menu.hovered_level == 0) then
-        -- if we're on the title screen, do nothing
+    if (menu.hovered_level == 0 and not menu.transitioning) then
+        if (not muted) then
+            print("❎".." sound", 60 - (#("❎".." sound")*4), 58, 2)
+        else
+            print("❎".." quiet", 60 - (#("❎".." quiet")*4), 58, 2)
+        end
     else
         -- lil dots to indicate which page we are on
         if (menu.offset > 63) then -- extreme hack but it works - don't show the pages on the menu screen
@@ -238,22 +251,22 @@ function _update_PLAYING()
 
     -- if we haven't hit game end condition yet, we fall here
     if (btnp(k_left) and check_left()) then -- left was pressed
-        sfx(s_button)
+        play_sfx(s_button)
         player_idx -= 1
     elseif (btnp(k_right) and check_right()) then -- right was pressed
-        sfx(s_button)
+        play_sfx(s_button)
         player_idx += 1
     elseif (btnp(k_up) and check_up()) then -- up was pressed
-        sfx(s_button)
+        play_sfx(s_button)
         player_idx -= current_level.cols
     elseif (btnp(k_down) and check_down()) then -- down was pressed
-        sfx(s_button)
+        play_sfx(s_button)
         player_idx += current_level.cols
     end
 
     -- check to see if we've hit the goal
     if (player_idx == goal_idx) then
-        sfx(s_goal)
+        play_sfx(s_goal)
         points += 1
         while (goal_idx == player_idx or tiles[goal_idx] == "EMPTY") do 
             goal_idx = rnd(#tiles)\1 + 1
@@ -392,40 +405,46 @@ function easeInOutQuad(t,b,c,d)
     if (t < 1) return c/2*t*t + b
     t -= 1
     return -c/2 * (t*(t-2) - 1) + b
-  end
+end
   
-  function initEaseManager()
+function initEaseManager()
     local easeManager = {}
   
     easeManager.list = {}
   
     easeManager.ease = function(obj, field, start, final, duration, callback)
-      local c = cocreate(function() 
-        for i=1,duration do
-          obj[field] = easeInOutQuad(i, start, final-start, duration)
-          yield()
-        end
-        obj[field] = final
-        if (callback ~= nil) then
-          callback()
-        end
-      end)
+        local c = cocreate(function() 
+            for i=1,duration do
+                obj[field] = easeInOutQuad(i, start, final-start, duration)
+                yield()
+            end
+            obj[field] = final
+            if (callback ~= nil) then
+                callback()
+            end
+        end)
   
-      add(easeManager.list, c)
+        add(easeManager.list, c)
     end
   
     easeManager.update = function(self)
-      for c in all(self.list) do
-        if costatus(c) then
-          coresume(c)
-        else
-          del(self.list, c)
+        for c in all(self.list) do
+            if costatus(c) then
+                coresume(c)
+            else
+                del(self.list, c)
+            end
         end
-      end
     end
   
     return easeManager
-  end
+end
+
+function play_sfx(sound)
+    if (not muted) then
+        sfx(sound)
+    end
+end
 
 -->8
 -- level layouts
