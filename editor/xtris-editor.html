@@ -15,21 +15,24 @@
             <!-- modal -->
             <div class="modal fade" id="validateModal" tabindex="-1">
                 <div class="modal-dialog">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h1 class="modal-title fs-5" id="modalTitle">XTRIS Level Results</h1>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="modalTitle">XTRIS Level Results</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="levelResultList">
+                            <!-- put validation results here (via JavaScript)-->
+                        </div>
+                        <div class="modal-footer">
+                            <div>
+                                To share your level, click "Play Level", then copy the URL of that page and share with your friends!
+                            </div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" id="playLevelButton" onclick="navigateToLink()">Play Level</button>
+                        </div>
                     </div>
-                    <div class="modal-body" id="levelResultList">
-                      <!-- put validation results here (via JavaScript)-->
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                      <button type="button" class="btn btn-primary" id="playLevelButton" onclick="navigateToLink()">Play Level</button>
-                    </div>
-                  </div>
                 </div>
-              </div>
+            </div>
 
             <!-- banner -->
             <div class="row d-flex justify-content-center">
