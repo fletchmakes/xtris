@@ -3,7 +3,7 @@ version 41
 __lua__
 -- xtris
 -- a game by fletch
--- music by leaflet_music
+-- music by Leaf Let
 
 -- globals
 current_level = {}
@@ -255,16 +255,12 @@ function _update_PLAYING()
 
     -- if we haven't hit game end condition yet, we fall here
     if (btnp(k_left) and check_left()) then -- left was pressed
-        -- play_sfx(s_button)
         player_idx -= 1
     elseif (btnp(k_right) and check_right()) then -- right was pressed
-        -- play_sfx(s_button)
         player_idx += 1
     elseif (btnp(k_up) and check_up()) then -- up was pressed
-        -- play_sfx(s_button)
         player_idx -= current_level.cols
     elseif (btnp(k_down) and check_down()) then -- down was pressed
-        -- play_sfx(s_button)
         player_idx += current_level.cols
     end
 
