@@ -347,6 +347,7 @@ end
 function load_level(level)
     -- set global data
     player_idx = level.start
+    goal_idx = level.start -- this will get changed later in the function
     game_over = false
     fade_idx = 1
 
@@ -375,7 +376,7 @@ function load_level(level)
         goal_idx = rnd(#tiles)\1 + 1
     end
 
-    fade_idx = goal_idx
+    fade_idx = level.start
 
     -- finalize setup
     start_time = t()
